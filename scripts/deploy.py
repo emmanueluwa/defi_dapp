@@ -1,10 +1,14 @@
 from scripts.helpful_scripts import get_account, get_contract
 from brownie import DappToken, TokenFarm, network, config
 from web3 import Web3
+import yaml
+import json
+import os
+import shutil
 
 KEPT_BALANCE = Web3.toWei(100, "ether")
 
-def deploy_token_farm_and_dapp_token():
+def deploy_token_farm_and_dapp_token(front_end_update=False):
     account = get_account()
     dapp_token = DappToken.deploy({"from": account})
     token_farm = TokenFarm.deploy(dapp_token.address, {"from":account}, publish_source=config["networks"][network.show_active()].get("verify", False))
@@ -22,8 +26,9 @@ def deploy_token_farm_and_dapp_token():
             weth_token: get_contract("eth_usd_price_feed")
     } #dict passed to allowed tokens, allows equal value in contract
     add_allowed_tokens(token_farm, dict_of_allowed_tokens, account)
+    if front_end_update:
+        update_front_end()
     return token_farm, dapp_token
-
 
 
 def add_allowed_tokens(token_farm, dict_of_allowed_tokens, account):
@@ -37,6 +42,28 @@ def add_allowed_tokens(token_farm, dict_of_allowed_tokens, account):
         set_transaction.wait(1)
     return token_farm
 
+def update_front_end():
+    #this function works because frontend is in this folder, for real app addresses will be... 
+    #avail to be used in front end code
+    ##we need to send the build folder
+    copy_folders_to_front_end("./build", "./front_end/src/chain-info")
+
+    ##we need to convert yaml to json then dump it into front end 
+    with open("brownie-config.yaml", "r") as brownie_config:
+        config_dict = yaml.load(brownie_config, Loader=yaml.FullLoader)
+        #send as json object to front end 
+        with open("./front_end/src/brownie-config.json", "w") as brownie_config_json:
+            json.dump(config_dict, brownie_config_json)
+    print("Front end update")
+
+def copy_folders_to_front_end(source, destination):
+    #if build folder exists
+    if os.path.exists(destination):
+        ##delete everything there
+        shutil.rmtree(destination)
+    #copy folder to front end
+    shutil.copytree(source, destination)
+
 
 def main():
-    deploy_token_farm_and_dapp_token()
+    deploy_token_farm_and_dapp_token(front_end_update=True)
