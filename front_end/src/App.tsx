@@ -8,7 +8,12 @@ function App() {
   return (
     <DAppProvider config={{
       //gd practice to test on local eg ganache to save time
-      supportedChains: [ChainId.Kovan]
+      // https://github.com/EthWorks/useDApp/issues/408         supprotedChains depracated
+      supportedChains: [ChainId.Kovan],
+      notifications: {
+        expirationPeriod: 1000,
+        checkInterval: 1000
+      }
     }}>
       <Header />
       <Container maxWidth="md">
