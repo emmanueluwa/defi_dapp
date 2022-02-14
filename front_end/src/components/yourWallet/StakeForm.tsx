@@ -2,7 +2,8 @@ import React, {useState, useEffect} from "react"
 import { Token } from "../Main"
 import { useEthers, useTokenBalance, useNotifications } from "@usedapp/core"
 import { formatUnits } from "@ethersproject/units"
-import { Button, Input, CircularProgress } from "@material-ui/core"
+import { Button, Input, CircularProgress, Snackbar } from "@material-ui/core"
+import Alert from "@material-ui/lab/Alert"
 import { useStakeTokens } from "../../hooks"
 import { utils } from "ethers"
 
@@ -35,22 +36,30 @@ export const StakeForm = ({ token }: StakeFormProps) => {
 
     //showing status of staking in ui
     const isMining = approveAndStakeErc20State.status === "Mining"
+    const [showErc20ApprovalSuccess, setShowErc20ApprovalSuccess] = useState(false)
+    const [showStakeTokenSuccess, setShowStakeTokenSuccess] = useState(false)
+    const handleCloseSnack = () => {
+        setShowErc20ApprovalSuccess(false)
+        setShowStakeTokenSuccess(false)
+    }
 
     useEffect(() => {
         if (notifications.filter(
             (notification) => 
                 notification.type === "transactionSucceed" &&
                 notification.transactionName === "Approve ERC20 transfer").length > 0) {
-            console.log("Approved") 
+            setShowErc20ApprovalSuccess(true)
+            setShowStakeTokenSuccess(false)
                 }
         if (notifications.filter(
             (notification) =>
                 notification.type == "transactionSucceed" &&
                 notification.transactionName == "Stake Tokens"
         ).length > 0) {
-            console.log("Tokens Staked")
+            setShowErc20ApprovalSuccess(false)
+            setShowStakeTokenSuccess(true)
         }
-    }, [notifications])
+    }, [notifications, setShowErc20ApprovalSuccess, setShowStakeTokenSuccess])
 
     return (
         <>
@@ -63,6 +72,24 @@ export const StakeForm = ({ token }: StakeFormProps) => {
                         {isMining ? <CircularProgress size={26} /> : "Stake"}
             </Button>
         </div>
+        <Snackbar
+            open={showErc20ApprovalSuccess}
+            autoHideDuration={5000}
+            onClose={handleCloseSnack}
+            >
+            <Alert onClose={handleCloseSnack} severity="success">
+                ERC-20 token transfer has been approved. Please approve the 2nd transation.
+            </Alert>
+        </Snackbar>
+        <Snackbar
+            open={showStakeTokenSuccess}
+            autoHideDuration={5000}
+            onClose={handleCloseSnack}
+            >
+            <Alert onClose={handleCloseSnack} severity="success">
+                Tokens Staked Succesfully
+            </Alert>
+        </Snackbar>
         </>
     )
 }
